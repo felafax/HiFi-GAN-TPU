@@ -1,0 +1,13 @@
+numpy
+scipy
+librosa
+unidecode
+inflect
+matplotlib
+torchvision
+datasets
+pdbpp
+ipython
+Cython
+packaging
+torch_xla
