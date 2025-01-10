@@ -18,9 +18,9 @@ def setup_models():
     spec_generator = FastPitchModel.from_pretrained("nvidia/tts_en_fastpitch").to(device)
     model = HifiGanModel.from_pretrained(model_name="nvidia/tts_hifigan").to(device)
     
-    # Convert to FP16
-    model = convert_to_dtype(model)
-    spec_generator = convert_to_dtype(spec_generator)
+    # Convert to FP32 instead of FP16
+    model = convert_to_dtype(model, dtype=torch.float32)
+    spec_generator = convert_to_dtype(spec_generator, dtype=torch.float32)
     
     # Set eval mode
     spec_generator.eval()
@@ -103,7 +103,8 @@ def fp_prediction(parsed: torch.Tensor, conditioning=None):
     with torch.no_grad():
         parsed = parsed.to(device)     
         enc_out, enc_mask = spec_generator.fastpitch.encoder(input=parsed, conditioning=conditioning)
-        enc_out, enc_mask = enc_out.to(torch.float16), enc_mask.to(torch.float16)
+        # Remove the FP16 conversions
+        enc_out, enc_mask = enc_out, enc_mask
         
         # Duration prediction
         log_durs_predicted = spec_generator.fastpitch.duration_predictor(enc_out, enc_mask, conditioning=conditioning)
@@ -123,7 +124,7 @@ def fp_prediction(parsed: torch.Tensor, conditioning=None):
         
         len_regulated, dec_lens, real_len = static_regulate_len(durs_predicted, enc_out, pace=1.0)
         dec_out, _ = spec_generator.fastpitch.decoder(input=len_regulated, seq_lens=dec_lens, conditioning=conditioning)
-        dec_out = dec_out.to(torch.float16)
+        dec_out = dec_out
         
         spect = spec_generator.fastpitch.proj(dec_out).transpose(1, 2) # Obtain spectrogram
         audio = model.convert_spectrogram_to_audio(spec=spect)
