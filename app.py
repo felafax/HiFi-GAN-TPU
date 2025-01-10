@@ -14,7 +14,7 @@ app = FastAPI(title="TTS API Service")
 
 class TTSRequest(BaseModel):
     texts: List[str]
-    return_format: str = "raw"  # "base64" or "raw"
+    return_format: str = "base64"  # "base64" or "raw"
 
 class TTSResponse(BaseModel):
     audio_data: List[str]  # Base64 encoded audio or raw waveform data
