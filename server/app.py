@@ -10,6 +10,7 @@ import uvicorn
 import random
 
 from server.hifi_gan import infer_e2e, setup_models
+from server.warmup_data import get_warmup_sentences
 
 app = FastAPI(title="TTS API Service")
 
@@ -37,8 +38,7 @@ async def startup_event():
 
 async def warmup():
     try:
-        # Select 20 random sentences
-        warmup_texts = random.sample(app.state.warmup_sentences, 20)
+        warmup_texts = get_warmup_sentences(20)
         
         # Run inference with warmup texts
         logging.info("Performing warm-up inference...")
