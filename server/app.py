@@ -25,15 +25,9 @@ class TTSResponse(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    # Load warmup sentences
-    with open("warmup.txt", "r") as f:
-        app.state.warmup_sentences = f.read().splitlines()
-    
     # Initialize models and move to device
     setup_models()
     logging.info("Models loaded and ready for inference")
-    
-    # Perform warmup
     await warmup()
 
 async def warmup():
