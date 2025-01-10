@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
@@ -8,11 +9,32 @@ import io
 import base64
 import uvicorn
 import random
-
+import logging
 from server.hifi_gan import infer_e2e, setup_models
 from server.warmup_data import get_warmup_sentences
 
-app = FastAPI(title="TTS API Service")
+logging.basicConfig(level=logging.INFO)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize models and move to device
+    setup_models()
+    logging.info("Models loaded and ready for inference")
+    
+    try:
+        warmup_texts = get_warmup_sentences(20)
+        
+        # Run inference with warmup texts
+        logging.info("Performing warm-up inference...")
+        await text_to_speech(TTSRequest(texts=warmup_texts, return_format="base64"))
+        logging.info("Warm-up complete")
+        
+    except Exception as e:
+        logging.error(f"Warm-up failed: {str(e)}")
+    
+    yield  # Server is now running and handling requests
+
+app = FastAPI(title="TTS API Service", lifespan=lifespan)
 
 class TTSRequest(BaseModel):
     texts: List[str]
@@ -22,25 +44,6 @@ class TTSResponse(BaseModel):
     audio_data: List[str]  # Base64 encoded audio or raw waveform data
     sample_rate: int = 22050
     duration_seconds: List[float]
-
-@app.on_event("startup")
-async def startup_event():
-    # Initialize models and move to device
-    setup_models()
-    logging.info("Models loaded and ready for inference")
-    await warmup()
-
-async def warmup():
-    try:
-        warmup_texts = get_warmup_sentences(20)
-        
-        # Run inference with warmup texts - changed to use base64 format
-        logging.info("Performing warm-up inference...")
-        await text_to_speech(TTSRequest(texts=warmup_texts, return_format="base64"))
-        logging.info("Warm-up complete")
-        
-    except Exception as e:
-        logging.error(f"Warm-up failed: {str(e)}")
 
 @app.post("/tts", response_model=TTSResponse)
 async def text_to_speech(request: TTSRequest):
