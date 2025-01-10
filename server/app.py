@@ -34,9 +34,9 @@ async def warmup():
     try:
         warmup_texts = get_warmup_sentences(20)
         
-        # Run inference with warmup texts
+        # Run inference with warmup texts - changed to use base64 format
         logging.info("Performing warm-up inference...")
-        await text_to_speech(TTSRequest(texts=warmup_texts, return_format="raw"))
+        await text_to_speech(TTSRequest(texts=warmup_texts, return_format="base64"))
         logging.info("Warm-up complete")
         
     except Exception as e:
@@ -61,14 +61,8 @@ async def text_to_speech(request: TTSRequest):
             sf.write(buffer, audio, 22050, format='WAV')
             buffer.seek(0)
             
-            if request.return_format == "base64":
-                # Convert to base64
-                audio_b64 = base64.b64encode(buffer.read()).decode()
-                audio_data.append(audio_b64)
-            else:
-                # Return raw waveform as list
-                audio_data.append(audio.tolist())
-                
+            audio_b64 = base64.b64encode(buffer.read()).decode()
+            audio_data.append(audio_b64)
             durations.append(len(audio) / 22050)  # Duration in seconds
             
         return TTSResponse(
