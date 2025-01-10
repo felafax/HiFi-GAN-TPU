@@ -1,6 +1,7 @@
 import torch
 import torch_xla
 import torch_xla.core.xla_model as xm
+import torch.nn.functional as F
 from nemo.collections.tts.models import FastPitchModel, HifiGanModel
 
 # Global variables for models
