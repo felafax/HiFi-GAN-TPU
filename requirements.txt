@@ -11,3 +11,10 @@ ipython
 Cython
 packaging
 torch_xla
+fastapi
+uvicorn
+torch
+git+https://github.com/neel04/NeMo.git@dev#egg=nemo_toolkit[tts]
+soundfile
+python-multipart
+pydantic
