@@ -7,8 +7,9 @@ import soundfile as sf
 import io
 import base64
 import uvicorn
+import random
 
-from hifi_gan import infer_e2e, setup_models
+from server.hifi_gan import infer_e2e, setup_models
 
 app = FastAPI(title="TTS API Service")
 
@@ -23,9 +24,29 @@ class TTSResponse(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
+    # Load warmup sentences
+    with open("warmup.txt", "r") as f:
+        app.state.warmup_sentences = f.read().splitlines()
+    
     # Initialize models and move to device
     setup_models()
     logging.info("Models loaded and ready for inference")
+    
+    # Perform warmup
+    await warmup()
+
+async def warmup():
+    try:
+        # Select 20 random sentences
+        warmup_texts = random.sample(app.state.warmup_sentences, 20)
+        
+        # Run inference with warmup texts
+        logging.info("Performing warm-up inference...")
+        await text_to_speech(TTSRequest(texts=warmup_texts, return_format="raw"))
+        logging.info("Warm-up complete")
+        
+    except Exception as e:
+        logging.error(f"Warm-up failed: {str(e)}")
 
 @app.post("/tts", response_model=TTSResponse)
 async def text_to_speech(request: TTSRequest):
